@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NanoCraft</title>
+    <title>NanoCraft 0.9</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         #hud { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
@@ -36,14 +36,12 @@
         }
         .btn:active { background: rgba(255, 255, 255, 0.5); }
 
-        /* Directional Layout */
         .btn-u { top: 0; left: 40px; width: 50px; height: 40px; }
         .btn-d { bottom: 0; left: 40px; width: 50px; height: 40px; }
         .btn-l { top: 40px; left: 0; width: 40px; height: 50px; }
         .btn-r { top: 40px; right: 0; width: 40px; height: 50px; }
         .pad-right .btn { border-color: rgba(255, 215, 0, 0.5); } 
 
-        /* Actions */
         .actions { position: absolute; bottom: 150px; right: 20px; display: flex; gap: 15px; pointer-events: auto; }
         .btn-act { position: relative; width: 55px; height: 55px; border-radius: 50%; font-size: 10px; }
         .btn-break { background: rgba(255, 50, 50, 0.4); border-color: #ff5555; }
@@ -54,8 +52,8 @@
 </head>
 <body>
     <div id="hud">
-        <h3>NanoCraft 0.8</h3>
-        Axis Fix: APPLIED | Blocks: <span id="block-count">0</span>
+        <h3>NanoCraft 0.9</h3>
+        Inventory Filtered | Blocks: <span id="block-count">0</span>
     </div>
     <div id="crosshair"></div>
 
@@ -89,6 +87,7 @@
     <script type="module">
         import * as THREE from 'three';
 
+        // --- 1. BLOCK DEFINITIONS ---
         const BLOCK_MANIFEST = [
             { id: 'grass', color: '#5fab3b', type: 'natural' },
             { id: 'dirt',  color: '#5D4037', type: 'natural' },
@@ -100,6 +99,7 @@
             { id: 'snow',  color: '#FFFFFF', type: 'natural' }
         ];
 
+        // --- 2. TEXTURE GENERATOR ---
         function createTexture(type, colorHex) {
             const c = document.createElement('canvas');
             c.width = 64; c.height = 64;
@@ -115,6 +115,7 @@
             return { tex, url: c.toDataURL() };
         }
 
+        // --- 3. SCENE SETUP ---
         const WORLD_SIZE = 20;
         const CHUNK_CAPACITY = 3000;
         const scene = new THREE.Scene();
@@ -122,8 +123,7 @@
         scene.fog = new THREE.Fog(0x87CEEB, 10, 40);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // --- CRITICAL FIX: SET ROTATION ORDER ---
-        camera.rotation.order = 'YXZ'; 
+        camera.rotation.order = 'YXZ'; // Prevents Gimbal Lock
         
         const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -134,14 +134,19 @@
         sun.position.set(50, 100, 50);
         scene.add(ambient, sun);
 
+        // --- 4. INITIALIZE BLOCKS & INVENTORY ---
         const blockMeshes = {};
         const worldData = new Map();
         const activePools = {};
         const dummy = new THREE.Object3D();
         const inventoryEl = document.getElementById('inventory');
         let selectedBlockId = BLOCK_MANIFEST[0].id;
-        var inventory=['grass','dirt','stone','gold','brick','plank'];
+        
+        // YOUR CUSTOM INVENTORY LIST
+        var inventory = ['grass','dirt','stone','gold','brick','plank'];
+
         BLOCK_MANIFEST.forEach((b, idx) => {
+            // 1. Create Mesh (Always do this so the block exists in the engine)
             const { tex, url } = createTexture(b.type, b.color);
             const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: b.type==='glass', opacity: b.type==='glass'?0.6:1 });
             const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), mat, CHUNK_CAPACITY);
@@ -149,33 +154,38 @@
             blockMeshes[b.id] = mesh;
             activePools[b.id] = 0;
 
-            const slot = document.createElement('div');
-            slot.className = 'inv-slot';
-            if(idx===0) slot.classList.add('selected');
-            slot.style.backgroundImage = `url(${url})`;
-            slot.innerHTML = `<span class="slot-num">${idx+1}</span>`;
-            slot.onclick = () => {
-                selectedBlockId = b.id;
-                document.querySelectorAll('.inv-slot').forEach(e=>e.classList.remove('selected'));
-                slot.classList.add('selected');
-            };
-            if (b.id in inventory) {
+            // 2. Create UI Slot (Only if it is in the allowed list)
+            if (inventory.includes(b.id)) {
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                // Default selection
+                if(selectedBlockId === b.id) slot.classList.add('selected');
+                
+                slot.style.backgroundImage = `url(${url})`;
+                slot.onclick = () => {
+                    selectedBlockId = b.id;
+                    document.querySelectorAll('.inv-slot').forEach(e=>e.classList.remove('selected'));
+                    slot.classList.add('selected');
+                };
                 inventoryEl.appendChild(slot);
             }
         });
 
+        // --- 5. WORLD MANIPULATION ---
         function setBlock(x, y, z, id) {
             const key = `${x},${y},${z}`;
+            // Remove old
             if(worldData.has(key)) {
                 const prev = worldData.get(key);
                 const pm = blockMeshes[prev.id];
                 const mat = new THREE.Matrix4();
                 pm.getMatrixAt(prev.idx, mat);
-                mat.elements[0]=0; mat.elements[5]=0; mat.elements[10]=0;
+                mat.elements[0]=0; mat.elements[5]=0; mat.elements[10]=0; // Scale 0
                 pm.setMatrixAt(prev.idx, mat);
                 pm.instanceMatrix.needsUpdate = true;
                 worldData.delete(key);
             }
+            // Add new
             if(id) {
                 const mesh = blockMeshes[id];
                 const idx = activePools[id]++;
@@ -191,20 +201,17 @@
             document.getElementById('block-count').innerText = worldData.size;
         }
 
+        // Generate Terrain
         for(let x=-WORLD_SIZE/2; x<WORLD_SIZE/2; x++) {
             for(let z=-WORLD_SIZE/2; z<WORLD_SIZE/2; z++) {
                 const h = Math.floor(Math.sin(x*0.2)*2 + Math.cos(z*0.2)*2);
                 setBlock(x, h, z, 'grass');
                 setBlock(x, h-1, z, 'dirt');
                 setBlock(x, h-2, z, 'stone');
-                setBlock(x, h-3, z, 'stone');
-                setBlock(x, h-4, z, 'stone');
-                setBlock(x, h-5, z, 'stone');
-                setBlock(x, h-6,z, 'stone');
-                setBlock(x, h-7, z, 'stone');
             }
         }
 
+        // --- 6. INPUT HANDLING ---
         const input = { w:0, a:0, s:0, d:0, sp:0, lU:0, lD:0, lL:0, lR:0 };
         const bind = (id, k) => {
             const el = document.getElementById(id);
@@ -245,43 +252,34 @@
         document.getElementById('btn-break').addEventListener('click', ()=>interact('break'));
         document.getElementById('btn-build').addEventListener('click', ()=>interact('build'));
 
-        // --- PHYSICS & ANIMATION ---
+        // --- 7. PHYSICS LOOP ---
         camera.position.set(0, 8, 0);
         const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
         
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. ROTATION (Look)
+            // Look
             const lookSpeed = 0.04;
             if(input.lL) camera.rotation.y += lookSpeed;
             if(input.lR) camera.rotation.y -= lookSpeed;
             if(input.lU) camera.rotation.x += lookSpeed;
             if(input.lD) camera.rotation.x -= lookSpeed;
-
-            // Clamp Pitch (-90 to +90)
+            
+            // Clamp Pitch
             camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
 
-            // 2. MOVEMENT (Strafe/Walk)
+            // Move
             const speed = 0.15;
-            
-            // Get Forward Vector (Projected to ground)
-            const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            fwd.y = 0; 
-            fwd.normalize();
-            
-            // Get Right Vector (Projected to ground)
-            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-            right.y = 0; 
-            right.normalize();
+            const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); fwd.y = 0; fwd.normalize();
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); right.y = 0; right.normalize();
             
             if(input.w) camera.position.add(fwd.multiplyScalar(speed));
             if(input.s) camera.position.add(fwd.multiplyScalar(-speed));
             if(input.a) camera.position.add(right.multiplyScalar(-speed));
             if(input.d) camera.position.add(right.multiplyScalar(speed));
 
-            // 3. GRAVITY
+            // Gravity
             velocity.y -= 0.025;
             const nextY = camera.position.y + velocity.y;
             const feetX = Math.round(camera.position.x);
