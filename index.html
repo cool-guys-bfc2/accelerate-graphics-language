@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NanoCraft 0.7 Stabilized</title>
+    <title>NanoCraft 0.8 (Fixed)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         #hud { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
@@ -54,8 +54,8 @@
 </head>
 <body>
     <div id="hud">
-        <h3>NanoCraft 0.7</h3>
-        Camera: Stabilized | Blocks: <span id="block-count">0</span>
+        <h3>NanoCraft 0.8</h3>
+        Axis Fix: APPLIED | Blocks: <span id="block-count">0</span>
     </div>
     <div id="crosshair"></div>
 
@@ -120,6 +120,9 @@
         scene.fog = new THREE.Fog(0x87CEEB, 10, 40);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // --- CRITICAL FIX: SET ROTATION ORDER ---
+        camera.rotation.order = 'YXZ'; 
+        
         const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -236,26 +239,33 @@
         // --- PHYSICS & ANIMATION ---
         camera.position.set(0, 8, 0);
         const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
         
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. ROTATION LOGIC
+            // 1. ROTATION (Look)
             const lookSpeed = 0.04;
             if(input.lL) camera.rotation.y += lookSpeed;
             if(input.lR) camera.rotation.y -= lookSpeed;
             if(input.lU) camera.rotation.x += lookSpeed;
             if(input.lD) camera.rotation.x -= lookSpeed;
 
-            // --- THE FIX: CLAMP VERTICAL LOOK ---
-            // Limit rotation between -90 degrees (-PI/2) and +90 degrees
-            const limit = Math.PI / 2 - 0.05; 
-            camera.rotation.x = Math.max(-limit, Math.min(limit, camera.rotation.x));
+            // Clamp Pitch (-90 to +90)
+            camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
 
-            // 2. MOVEMENT LOGIC
+            // 2. MOVEMENT (Strafe/Walk)
             const speed = 0.15;
-            const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); fwd.y=0; fwd.normalize();
-            const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion); right.y=0; right.normalize();
+            
+            // Get Forward Vector (Projected to ground)
+            const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            fwd.y = 0; 
+            fwd.normalize();
+            
+            // Get Right Vector (Projected to ground)
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0; 
+            right.normalize();
             
             if(input.w) camera.position.add(fwd.multiplyScalar(speed));
             if(input.s) camera.position.add(fwd.multiplyScalar(-speed));
