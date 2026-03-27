@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NanoCraft 0.8 (Fixed)</title>
+    <title>NanoCraft</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         #hud { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
@@ -140,7 +140,7 @@
         const dummy = new THREE.Object3D();
         const inventoryEl = document.getElementById('inventory');
         let selectedBlockId = BLOCK_MANIFEST[0].id;
-
+        var inventory=['grass','dirt','stone','gold','brick','plank'];
         BLOCK_MANIFEST.forEach((b, idx) => {
             const { tex, url } = createTexture(b.type, b.color);
             const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: b.type==='glass', opacity: b.type==='glass'?0.6:1 });
@@ -159,7 +159,9 @@
                 document.querySelectorAll('.inv-slot').forEach(e=>e.classList.remove('selected'));
                 slot.classList.add('selected');
             };
-            inventoryEl.appendChild(slot);
+            if (b.id in inventory) {
+                inventoryEl.appendChild(slot);
+            }
         });
 
         function setBlock(x, y, z, id) {
@@ -195,6 +197,11 @@
                 setBlock(x, h, z, 'grass');
                 setBlock(x, h-1, z, 'dirt');
                 setBlock(x, h-2, z, 'stone');
+                setBlock(x, h-3, z, 'stone');
+                setBlock(x, h-4, z, 'stone');
+                setBlock(x, h-5, z, 'stone');
+                setBlock(x, h-6,z, 'stone');
+                setBlock(x, h-7, z, 'stone');
             }
         }
 
