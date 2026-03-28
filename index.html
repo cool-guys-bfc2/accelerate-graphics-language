@@ -3,47 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NanoCraft 1.6 Reset</title>
+    <title>NanoCraft 1.8 Events</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         
-        /* --- HUD & RESET --- */
         #hud { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
         .hud-row { display: flex; align-items: center; gap: 10px; }
         #hearts { margin-top: 5px; font-size: 20px; color: #FF3333; text-shadow: 2px 2px 0 #000; }
+        .btn-reset { pointer-events: auto; background: #a00; color: white; border: 2px solid white; font-weight: bold; font-size: 10px; padding: 4px 8px; cursor: pointer; text-transform: uppercase; }
         
-        .btn-reset {
-            pointer-events: auto; background: #a00; color: white; border: 2px solid white;
-            font-family: inherit; font-weight: bold; font-size: 10px; padding: 4px 8px;
-            cursor: pointer; text-transform: uppercase;
-        }
-        .btn-reset:hover { background: #f00; }
+        #loot-feed { position: absolute; top: 60px; right: 10px; width: 200px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: 50; }
+        .loot-msg { background: rgba(0,0,0,0.5); color: #fff; padding: 5px 10px; margin-bottom: 5px; border-radius: 5px; font-size: 12px; animation: fadeOut 3s forwards; }
+        @keyframes fadeOut { 0% { opacity: 1; transform: translateX(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(20px); } }
 
-        /* --- DEATH SCREEN --- */
-        #death-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(100, 0, 0, 0.8); z-index: 100;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            color: white; pointer-events: auto;
-        }
-        #death-screen h1 { font-size: 40px; margin-bottom: 20px; text-shadow: 4px 4px 0 #000; }
-        .respawn-btn {
-            padding: 15px 30px; font-size: 18px; background: #ccc; border: 4px solid #fff;
-            cursor: pointer; font-family: inherit; font-weight: bold;
-        }
-        .respawn-btn:hover { background: #fff; }
-
-        /* --- UI ELEMENTS --- */
+        #death-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(100, 0, 0, 0.8); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: auto; }
+        .respawn-btn { padding: 15px 30px; font-size: 18px; background: #ccc; border: 4px solid #fff; cursor: pointer; font-family: inherit; font-weight: bold; }
         #damage-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 5; }
         #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid white; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: 10; mix-blend-mode: difference; }
         
-        /* --- INVENTORY --- */
         #inventory { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 12px; pointer-events: auto; z-index: 40; }
-        .inv-slot { width: 45px; height: 45px; border: 2px solid #555; border-radius: 8px; cursor: pointer; position: relative; background-size: cover; image-rendering: pixelated; transition: transform 0.1s, border-color 0.1s; background-color: rgba(0,0,0,0.3); }
+        .inv-slot { width: 45px; height: 45px; border: 2px solid #555; border-radius: 8px; cursor: pointer; position: relative; background-size: cover; image-rendering: pixelated; transition: transform 0.1s; background-color: rgba(0,0,0,0.3); }
         .inv-slot.selected { border-color: #fff; box-shadow: 0 0 8px white; transform: scale(1.15); z-index: 41; }
         .slot-count { position: absolute; bottom: -2px; right: 2px; color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
 
-        /* --- CONTROLS --- */
         .control-layer { position: absolute; bottom: 70px; width: 100%; height: 160px; pointer-events: none; z-index: 20; }
         .d-pad { position: absolute; width: 130px; height: 130px; pointer-events: auto; background: rgba(0,0,0,0.1); border-radius: 50%; }
         .pad-left { left: 20px; bottom: 10px; }
@@ -64,12 +46,12 @@
 </head>
 <body>
     <div id="damage-overlay"></div>
+    <div id="loot-feed"></div>
     
     <div id="hud">
         <div class="hud-row">
-            <h3>NanoCraft 1.6</h3>
-            <!-- RESET BUTTON -->
-            <button class="btn-reset" onclick="resetWorld()">Reset World</button>
+            <h3>NanoCraft 1.8</h3>
+            <button class="btn-reset" onclick="resetWorld()">Reset</button>
         </div>
         <div id="hearts">❤❤❤❤❤❤❤❤❤❤</div>
         <div id="save-status" style="font-size: 10px; color: #ffff00; margin-top:5px;"></div>
@@ -95,7 +77,7 @@
         </div>
         <div class="actions">
             <div class="btn btn-act btn-break" id="btn-break">ATTACK</div>
-            <div class="btn btn-act btn-build" id="btn-build">BUILD</div>
+            <div class="btn btn-act btn-build" id="btn-build">USE</div>
         </div>
         <div class="d-pad pad-right">
             <div class="btn btn-u" id="btn-look-u">↑</div>
@@ -112,163 +94,182 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. CONFIGURATION ---
+        // --- 1. CONFIGURATION & EVENTS ---
+        
+        // Supported Events: 'explode', 'heal', 'spawn', 'place_block', 'consume'
+        
         const BLOCK_MANIFEST = [
             { id: 'grass', color: '#5fab3b', type: 'natural' },
             { id: 'dirt',  color: '#5D4037', type: 'natural' },
             { id: 'stone', color: '#757575', type: 'natural' },
             { id: 'plank', color: '#BC8F8F', type: 'wood' },
             { id: 'brick', color: '#A93226', type: 'brick' },
-            { id: 'glass', color: '#88CCFF', type: 'glass' }
+            { id: 'glass', color: '#88CCFF', type: 'glass' },
+            // TNT: Explodes on Break
+            { 
+                id: 'tnt', color: '#FF0000', type: 'tnt',
+                events: {
+                    onBreak: [ { action: 'explode', radius: 4 } ]
+                }
+            }
         ];
-        const EGG_MANIFEST = [
-            { id: 'egg_pig', color: '#FFC0CB', spot: '#DB7093', entity: 'pig' },
-            { id: 'egg_zombie', color: '#2E8B57', spot: '#000000', entity: 'zombie' }
+
+        const ITEM_MANIFEST = [
+            { id: 'rotten_flesh', color: '#8B4513', type: 'meat' },
+            { id: 'porkchop', color: '#FFB6C1', type: 'meat' },
+            { id: 'ender_pearl', color: '#00CED1', type: 'gem' },
+            // Medkit: Heals on Use
+            { 
+                id: 'medkit', color: '#FFFFFF', type: 'medkit',
+                events: {
+                    onUse: [ { action: 'heal', amount: 5 }, { action: 'consume' } ]
+                }
+            },
+            // Eggs: Spawn on Use (Replaced Hardcoded Logic)
+            { id: 'egg_pig', color: '#FFC0CB', spot: '#DB7093', type: 'egg', events: { onUse: [{action:'spawn', entity:'pig'}, {action:'consume'}] } },
+            { id: 'egg_zombie', color: '#2E8B57', spot: '#000000', type: 'egg', events: { onUse: [{action:'spawn', entity:'zombie'}, {action:'consume'}] } }
         ];
+
         const ENTITY_MANIFEST = {
-            'zombie': { color: '#2E8B57', speed: 0.04, hp: 20, damage: 2, width: 0.6, height: 1.8, ai: 'chase' },
-            'pig':    { color: '#FFC0CB', speed: 0.02, hp: 10, damage: 0, width: 0.8, height: 0.8, ai: 'wander' },
-            'enderman': { color: '#000000', speed: 0.1, hp: 40, damage: 4, width: 0.5, height: 2.8, ai: 'wander' }
+            'zombie': { 
+                color: '#2E8B57', speed: 0.04, hp: 20, damage: 2, width: 0.6, height: 1.8, ai: 'chase',
+                drops: [{ id: 'rotten_flesh', chance: 1.0 }, { id: 'tnt', chance: 0.1 }] // Zombies drop TNT rarely
+            },
+            'pig': { 
+                color: '#FFC0CB', speed: 0.02, hp: 10, damage: 0, width: 0.8, height: 0.8, ai: 'wander',
+                drops: [{ id: 'porkchop', chance: 1.0 }]
+            },
+            'enderman': { 
+                color: '#000000', speed: 0.1, hp: 40, damage: 4, width: 0.5, height: 2.8, ai: 'wander',
+                drops: [{ id: 'ender_pearl', chance: 1.0 }]
+            }
         };
 
-        // --- 2. TEXTURES ---
-        function createTexture(type, colorHex, spotColor) {
-            const c = document.createElement('canvas');
-            c.width = 64; c.height = 64;
-            const ctx = c.getContext('2d');
+        // --- 2. TEXTURE GENERATION ---
+        function createTexture(spec) {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64; const ctx = c.getContext('2d');
+            const color = spec.color; const type = spec.type;
+
             if(type === 'egg') {
                 ctx.beginPath(); ctx.ellipse(32, 32, 20, 28, 0, 0, 2*Math.PI);
-                ctx.fillStyle = colorHex; ctx.fill(); ctx.stroke();
-                ctx.fillStyle = spotColor;
+                ctx.fillStyle = color; ctx.fill(); ctx.stroke();
+                ctx.fillStyle = spec.spot;
                 for(let i=0;i<8;i++) { ctx.beginPath(); ctx.arc(20+Math.random()*24, 20+Math.random()*24, 3, 0, 2*Math.PI); ctx.fill(); }
-            } else {
-                ctx.fillStyle = colorHex; ctx.fillRect(0,0,64,64);
-                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            } 
+            else if(type === 'medkit') {
+                ctx.fillStyle = '#FFF'; ctx.fillRect(10,15,44,34); ctx.strokeRect(10,15,44,34);
+                ctx.fillStyle = '#F00'; ctx.fillRect(28, 20, 8, 24); ctx.fillRect(20, 28, 24, 8); // Cross
+            }
+            else if(type === 'tnt') {
+                ctx.fillStyle = '#D22'; ctx.fillRect(0,0,64,64); // Red
+                ctx.fillStyle = '#FFF'; ctx.fillRect(0, 20, 64, 24); // White stripe
+                ctx.fillStyle = '#000'; ctx.font = "bold 16px Arial"; ctx.fillText("TNT", 16, 38);
+            }
+            else if(type === 'meat') {
+                ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(10,20); ctx.lineTo(54,15); ctx.lineTo(60,40); ctx.lineTo(30,55); ctx.lineTo(5,45); ctx.fill();
+                if(color === '#8B4513') { ctx.fillStyle = 'rgba(0,200,0,0.2)'; for(let i=0;i<10;i++) ctx.fillRect(10+Math.random()*40, 20+Math.random()*30, 4, 4); }
+            }
+            else { // Blocks
+                ctx.fillStyle = color; ctx.fillRect(0,0,64,64); ctx.fillStyle = 'rgba(0,0,0,0.1)';
                 if(type === 'natural') for(let i=0;i<400;i++) ctx.fillRect(Math.random()*64, Math.random()*64, 2, 2);
                 else if(type === 'brick') for(let y=0;y<64;y+=16) for(let x=0;x<64;x+=16) ctx.strokeRect(x,y,16,10);
                 else if(type === 'wood') for(let y=0;y<64;y+=8) ctx.fillRect(0,y,64,1);
                 else if(type === 'glass') { ctx.strokeStyle='white'; ctx.strokeRect(5,5,20,20); ctx.globalAlpha=0.5; }
             }
-            const tex = new THREE.CanvasTexture(c);
-            tex.magFilter = THREE.NearestFilter;
-            return { tex, url: c.toDataURL() };
+            const tex = new THREE.CanvasTexture(c); tex.magFilter = THREE.NearestFilter; return { tex, url: c.toDataURL() };
         }
 
         // --- 3. ENGINE ---
-        const WORLD_SIZE = 24;
-        const CHUNK_CAPACITY = 4000;
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.Fog(0x87CEEB, 10, 40);
+        const WORLD_SIZE = 24; const CHUNK_CAPACITY = 4000;
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 10, 40);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); camera.rotation.order = 'YXZ';
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.appendChild(renderer.domElement);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.7); scene.add(ambient);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(50, 100, 50); scene.add(sun);
+
+        // --- 4. ASSETS ---
+        const blockMeshes = {}; const itemMeta = {}; const activePools = {}; const blockEvents = {}; const dummy = new THREE.Object3D();
         
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.rotation.order = 'YXZ';
-        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-        sun.position.set(50, 100, 50);
-        scene.add(ambient, sun);
-
-        // --- 4. PLAYER STATS ---
-        const player = { hp: 20, maxHp: 20, invuln: 0, dead: false };
-
-        function updateHearts() {
-            const hearts = Math.ceil(player.hp / 2);
-            let str = '';
-            for(let i=0; i<10; i++) str += i < hearts ? '❤' : '♡';
-            document.getElementById('hearts').innerText = str;
-        }
-
-        function takeDamage(amount) {
-            if(player.dead || player.invuln > 0) return;
-            player.hp -= amount;
-            player.invuln = 30;
-            updateHearts();
-            document.getElementById('damage-overlay').style.opacity = 0.5;
-            setTimeout(() => document.getElementById('damage-overlay').style.opacity = 0, 100);
-
-            if(player.hp <= 0) {
-                player.dead = true; player.hp = 0;
-                document.getElementById('death-screen').style.display = 'flex';
-                document.exitPointerLock();
-            }
-        }
-
-        window.respawn = () => {
-            player.hp = player.maxHp; player.dead = false; player.invuln = 60;
-            updateHearts();
-            camera.position.set(0, 20, 0);
-            document.getElementById('death-screen').style.display = 'none';
-        };
-
-        // --- 5. WORLD & RESET LOGIC ---
-        const blockMeshes = {};
-        const itemMeta = {};
-        const activePools = {};
-        const dummy = new THREE.Object3D();
-        const worldData = new Map();
-        let playerInventory = { 'brick': 10, 'plank': 10, 'egg_zombie': 5, 'egg_pig': 5 };
-        
+        // Blocks
         BLOCK_MANIFEST.forEach(b => {
-            const { tex, url } = createTexture(b.type, b.color);
+            const { tex, url } = createTexture(b);
             const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: b.type==='glass', opacity: b.type==='glass'?0.6:1 });
             const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), mat, CHUNK_CAPACITY);
             scene.add(mesh);
-            blockMeshes[b.id] = mesh;
-            itemMeta[b.id] = { url, type: 'block' };
-            activePools[b.id] = 0;
-        });
-        EGG_MANIFEST.forEach(e => {
-            const { url } = createTexture('egg', e.color, e.spot);
-            itemMeta[e.id] = { url, type: 'egg', entity: e.entity };
+            blockMeshes[b.id] = mesh; itemMeta[b.id] = { url, type: 'block' }; activePools[b.id] = 0;
+            if(b.events) blockEvents[b.id] = b.events;
         });
 
-        // SAVE / LOAD / RESET
-        const SAVE_KEY = 'nc_16';
+        // Items & Eggs
+        ITEM_MANIFEST.forEach(i => {
+            const { url } = createTexture(i);
+            itemMeta[i.id] = { url, type: 'item', events: i.events };
+        });
 
-        function saveGame() {
-            if(player.dead) return;
-            const save = { blocks: Array.from(worldData), inv: playerInventory, hp: player.hp, pos: {x:camera.position.x, y:camera.position.y, z:camera.position.z} };
-            localStorage.setItem(SAVE_KEY, JSON.stringify(save));
-            document.getElementById('save-status').innerText = "Saved";
-            setTimeout(()=>document.getElementById('save-status').innerText="", 1000);
+        // --- 5. STATE & EVENTS ---
+        const worldData = new Map();
+        const player = { hp: 20, maxHp: 20, invuln: 0, dead: false };
+        let playerInventory = { 'brick': 10, 'tnt': 5, 'medkit': 3 };
+
+        // THE EVENT ENGINE
+        function triggerEvent(eventList, context) {
+            if(!eventList) return;
+            
+            eventList.forEach(e => {
+                if(e.action === 'explode') {
+                    const r = e.radius;
+                    // Simple spherical explosion
+                    for(let x = -r; x <= r; x++) {
+                        for(let y = -r; y <= r; y++) {
+                            for(let z = -r; z <= r; z++) {
+                                if(x*x + y*y + z*z <= r*r) {
+                                    const tx = context.x + x, ty = context.y + y, tz = context.z + z;
+                                    removeBlock(tx, ty, tz, false); // false = no drops
+                                }
+                            }
+                        }
+                    }
+                    // Explosion VFX (Shake camera)
+                    camera.position.y += 0.5;
+                    // Damage entities
+                    if(context.x && camera.position.distanceTo(new THREE.Vector3(context.x, context.y, context.z)) < r) {
+                        takeDamage(5);
+                    }
+                }
+                else if(e.action === 'heal') {
+                    player.hp = Math.min(player.hp + e.amount, player.maxHp);
+                    updateHearts();
+                    showLoot("Healed!");
+                }
+                else if(e.action === 'spawn') {
+                    spawnEntity(e.entity, context.x, context.y+1, context.z);
+                }
+                else if(e.action === 'consume') {
+                    modifyInventory(selectedItemId, -1);
+                }
+            });
         }
-
-        // GLOBAL RESET FUNCTION
-        window.resetWorld = () => {
-            if(confirm("⚠️ RESET WORLD?\nThis will delete your save and generate a new world.\n(Cannot be undone)")) {
-                localStorage.removeItem(SAVE_KEY);
-                location.reload();
-            }
-        };
-
-        function loadGame() {
-            if(localStorage.getItem(SAVE_KEY)) {
-                const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-                playerInventory = s.inv; player.hp = s.hp; 
-                if(s.pos) camera.position.set(s.pos.x, s.pos.y, s.pos.z);
-                s.blocks.forEach(([k,v]) => { const p=k.split(',').map(Number); spawnBlockVisual(p[0],p[1],p[2],v.id); });
-                return true;
-            }
-            return false;
-        }
-        setInterval(saveGame, 5000);
 
         // --- 6. INVENTORY ---
         const invEl = document.getElementById('inventory');
         let selectedItemId = null;
+
+        function showLoot(text) {
+            const feed = document.getElementById('loot-feed');
+            const msg = document.createElement('div'); msg.className = 'loot-msg';
+            msg.innerText = text; feed.appendChild(msg);
+            setTimeout(()=>msg.remove(), 3000);
+        }
+
         function renderInventory() {
             invEl.innerHTML = '';
             const items = Object.keys(playerInventory);
             if(items.length === 0) { selectedItemId = null; return; }
             if(!playerInventory[selectedItemId]) selectedItemId = items[0];
+
             items.forEach(id => {
                 if(!itemMeta[id]) return;
-                const slot = document.createElement('div');
-                slot.className = 'inv-slot';
+                const slot = document.createElement('div'); slot.className = 'inv-slot';
                 if(id === selectedItemId) slot.classList.add('selected');
                 slot.style.backgroundImage = `url(${itemMeta[id].url})`;
                 slot.innerHTML = `<div class="slot-count">${playerInventory[id]}</div>`;
@@ -276,14 +277,34 @@
                 invEl.appendChild(slot);
             });
         }
+
         function modifyInventory(id, amt) {
             if(!id) return;
             if(!playerInventory[id]) playerInventory[id] = 0;
             playerInventory[id] += amt;
             if(playerInventory[id] <= 0) delete playerInventory[id];
+            if(amt > 0) showLoot(`+${amt} ${id.toUpperCase()}`);
             renderInventory();
         }
 
+        function updateHearts() {
+            const hearts = Math.ceil(player.hp / 2);
+            let str = ''; for(let i=0; i<10; i++) str += i < hearts ? '❤' : '♡';
+            document.getElementById('hearts').innerText = str;
+        }
+
+        function takeDamage(amount) {
+            if(player.dead || player.invuln > 0) return;
+            player.hp -= amount; player.invuln = 30; updateHearts();
+            document.getElementById('damage-overlay').style.opacity = 0.5;
+            setTimeout(() => document.getElementById('damage-overlay').style.opacity = 0, 100);
+            if(player.hp <= 0) { player.dead = true; player.hp = 0; document.getElementById('death-screen').style.display = 'flex'; document.exitPointerLock(); }
+        }
+
+        window.respawn = () => { player.hp = player.maxHp; player.dead = false; player.invuln = 60; updateHearts(); camera.position.set(0, 20, 0); document.getElementById('death-screen').style.display = 'none'; };
+        window.resetWorld = () => { if(confirm("Reset World?")) { localStorage.removeItem('nc_18'); location.reload(); } };
+
+        // --- 7. WORLD & ENTITIES ---
         function spawnBlockVisual(x, y, z, id) {
             const mesh = blockMeshes[id];
             const idx = activePools[id]++;
@@ -293,83 +314,91 @@
             worldData.set(`${x},${y},${z}`, { id, idx });
         }
 
-        // Init
-        if(!loadGame()) {
-            for(let x=-12;x<12;x++) for(let z=-12;z<12;z++) {
-                const h = Math.floor(Math.sin(x*0.2)*2 + Math.cos(z*0.2)*2);
-                spawnBlockVisual(x,h,z,'grass'); spawnBlockVisual(x,h-1,z,'dirt');
+        function removeBlock(x, y, z, drops = true) {
+            const key = `${x},${y},${z}`;
+            if(worldData.has(key)) {
+                const prev = worldData.get(key);
+                const pm = blockMeshes[prev.id];
+                const mat = new THREE.Matrix4();
+                pm.getMatrixAt(prev.idx, mat); mat.elements[0]=0; pm.setMatrixAt(prev.idx, mat); pm.instanceMatrix.needsUpdate=true;
+                worldData.delete(key);
+                
+                // 1. Drop Item
+                if(drops) modifyInventory(prev.id, 1);
+
+                // 2. Trigger Break Events (e.g., TNT)
+                if(blockEvents[prev.id] && blockEvents[prev.id].onBreak) {
+                    triggerEvent(blockEvents[prev.id].onBreak, { x, y, z });
+                }
             }
         }
-        renderInventory();
-        updateHearts();
 
-        // --- 7. ENTITIES ---
+        // ENTITIES
         let entities = [];
         const entGeo = new THREE.BoxGeometry(1,1,1);
+        
+        function createEntityFace(type) {
+            const c = document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d');
+            if(type==='zombie'){ ctx.fillStyle='#2E8B57';ctx.fillRect(0,0,64,64); ctx.fillStyle='#111';ctx.fillRect(12,20,10,10);ctx.fillRect(42,20,10,10); }
+            else if(type==='pig'){ ctx.fillStyle='#FFC0CB';ctx.fillRect(0,0,64,64);ctx.fillStyle='#FFF';ctx.fillRect(8,20,12,12);ctx.fillRect(44,20,12,12);ctx.fillStyle='#000';ctx.fillRect(12,24,4,4);ctx.fillRect(48,24,4,4);ctx.fillStyle='#DB7093';ctx.fillRect(20,36,24,14); }
+            return new THREE.CanvasTexture(c);
+        }
+
         function spawnEntity(type, x, y, z) {
             const data = ENTITY_MANIFEST[type];
-            const mat = new THREE.MeshStandardMaterial({ color: data.color });
-            const mesh = new THREE.Mesh(entGeo, mat);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: data.color });
+            const faceMat = new THREE.MeshStandardMaterial({ map: createEntityFace(type) });
+            const mesh = new THREE.Mesh(entGeo, [bodyMat,bodyMat,bodyMat,bodyMat,faceMat,bodyMat]);
             mesh.scale.set(data.width, data.height, data.width);
             mesh.position.set(x, y, z);
             scene.add(mesh);
             entities.push({ mesh, type, hp: data.hp, data, vel: new THREE.Vector3(), hurt: 0 });
         }
-        if(entities.length === 0) spawnEntity('zombie', 5, 10, 5);
 
-        function updateEntities() {
-            for (let i = entities.length - 1; i >= 0; i--) {
-                const e = entities[i];
-                if(e.hurt > 0) { e.hurt--; e.mesh.material.color.setHex(0xFF0000); } 
-                else e.mesh.material.color.set(e.data.color);
+        // Init World
+        const SAVE_KEY = 'nc_18';
+        function saveGame() { if(!player.dead) { const s={b:Array.from(worldData),i:playerInventory,h:player.hp,p:{x:camera.position.x,y:camera.position.y,z:camera.position.z}}; localStorage.setItem(SAVE_KEY,JSON.stringify(s)); document.getElementById('save-status').innerText="Saved"; setTimeout(()=>document.getElementById('save-status').innerText="",1000);}}
+        setInterval(saveGame, 5000);
 
-                e.vel.y -= 0.02;
-                const nextY = e.mesh.position.y + e.vel.y;
-                const feetY = Math.round(nextY - e.data.height/2);
-                if(worldData.has(`${Math.round(e.mesh.position.x)},${feetY},${Math.round(e.mesh.position.z)}`)) {
-                    e.vel.y = 0; e.mesh.position.y = feetY + 0.5 + e.data.height/2;
-                    e.vel.x *= 0.8; e.vel.z *= 0.8;
-                } else e.mesh.position.y = nextY;
-
-                const dist = e.mesh.position.distanceTo(camera.position);
-                if(e.data.ai === 'chase' && dist < 20) {
-                    const dx = camera.position.x - e.mesh.position.x;
-                    const dz = camera.position.z - e.mesh.position.z;
-                    e.vel.x += (dx/dist) * 0.002; e.vel.z += (dz/dist) * 0.002;
-                    e.mesh.rotation.y = Math.atan2(dx, dz);
-                    if(dist < 1.5) {
-                        takeDamage(e.data.damage);
-                        velocity.x += (dx/dist) * 0.3; velocity.z += (dz/dist) * 0.3;
-                    }
-                } else if(Math.random() < 0.02) {
-                    e.vel.x += (Math.random()-0.5)*0.1; e.vel.z += (Math.random()-0.5)*0.1;
-                }
-                e.mesh.position.x += e.vel.x; e.mesh.position.z += e.vel.z;
-                if(e.mesh.position.y < -20) { scene.remove(e.mesh); entities.splice(i, 1); }
+        if(localStorage.getItem(SAVE_KEY)) {
+            const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+            playerInventory = s.i; player.hp = s.h; camera.position.set(s.p.x, s.p.y, s.p.z);
+            s.b.forEach(([k,v]) => { const p=k.split(',').map(Number); spawnBlockVisual(p[0],p[1],p[2],v.id); });
+        } else {
+            for(let x=-12;x<12;x++) for(let z=-12;z<12;z++) {
+                const h = Math.floor(Math.sin(x*0.2)*2 + Math.cos(z*0.2)*2);
+                spawnBlockVisual(x,h,z,'grass'); spawnBlockVisual(x,h-1,z,'dirt');
             }
+            spawnEntity('zombie', 5, 10, 5);
         }
+        renderInventory();
+        updateHearts();
 
-        // --- 8. CONTROLS ---
+        // --- 8. INTERACTION & LOGIC ---
         const raycaster = new THREE.Raycaster();
         const center = new THREE.Vector2(0,0);
 
         function interact(mode) {
             if(player.dead) return;
             raycaster.setFromCamera(center, camera);
-            const entMeshes = entities.map(e => e.mesh);
-            const entHit = raycaster.intersectObjects(entMeshes);
-            
+
+            // Entities
+            const entHit = raycaster.intersectObjects(entities.map(e => e.mesh));
             if(entHit.length > 0 && entHit[0].distance < 4 && mode === 'break') {
                 const target = entities.find(e => e.mesh === entHit[0].object);
                 if(target) {
                     target.hp -= 4; target.hurt = 5; target.vel.y += 0.2;
                     target.vel.x += (target.mesh.position.x - camera.position.x)*0.5;
                     target.vel.z += (target.mesh.position.z - camera.position.z)*0.5;
-                    if(target.hp <= 0) { scene.remove(target.mesh); entities = entities.filter(e => e !== target); }
+                    if(target.hp <= 0) {
+                        if(target.data.drops) target.data.drops.forEach(d => { if(Math.random()<d.chance) modifyInventory(d.id, 1); });
+                        scene.remove(target.mesh); entities = entities.filter(e => e !== target);
+                    }
                 }
                 return;
             }
 
+            // Blocks
             const intersects = raycaster.intersectObjects(Object.values(blockMeshes));
             if(intersects.length > 0 && intersects[0].distance < 6) {
                 const hit = intersects[0];
@@ -378,28 +407,32 @@
                 const z = Math.round(hit.point.z - hit.face.normal.z*0.1);
 
                 if(mode === 'break') {
-                    const key = `${x},${y},${z}`;
-                    if(worldData.has(key)) {
-                        const prev = worldData.get(key);
-                        const pm = blockMeshes[prev.id];
-                        const mat = new THREE.Matrix4();
-                        pm.getMatrixAt(prev.idx, mat); mat.elements[0]=0; pm.setMatrixAt(prev.idx, mat); pm.instanceMatrix.needsUpdate=true;
-                        worldData.delete(key);
-                        modifyInventory(prev.id, 1);
-                    }
-                } else if (mode === 'build' && selectedItemId) {
+                    removeBlock(x, y, z);
+                } 
+                else if (mode === 'build' && selectedItemId) {
                      const meta = itemMeta[selectedItemId];
-                     if(meta.type === 'egg') {
-                        const bx = x + hit.face.normal.x; const by = y + hit.face.normal.y; const bz = z + hit.face.normal.z;
-                        spawnEntity(meta.entity, bx, by, bz);
-                        modifyInventory(selectedItemId, -1);
-                     } else {
+                     
+                     // 1. Check for ITEM EVENTS (Building/Using)
+                     if(meta.events && meta.events.onUse) {
+                         const bx = x + hit.face.normal.x;
+                         const by = y + hit.face.normal.y;
+                         const bz = z + hit.face.normal.z;
+                         triggerEvent(meta.events.onUse, { x: bx, y: by, z: bz });
+                     }
+                     // 2. Standard Block Placement
+                     else if (meta.type === 'block') {
                         const bx = x + hit.face.normal.x; const by = y + hit.face.normal.y; const bz = z + hit.face.normal.z;
                         if(!(Math.abs(bx-camera.position.x)<0.8 && Math.abs(by-camera.position.y+1.5)<1.8 && Math.abs(bz-camera.position.z)<0.8)) {
                             spawnBlockVisual(bx, by, bz, selectedItemId);
                             modifyInventory(selectedItemId, -1);
                         }
                      }
+                }
+            } else if (mode === 'build' && selectedItemId) {
+                // Use item in air (e.g. Medkit)
+                const meta = itemMeta[selectedItemId];
+                if(meta && meta.events && meta.events.onUse) {
+                    triggerEvent(meta.events.onUse, { x:0, y:0, z:0 });
                 }
             }
         }
@@ -419,45 +452,45 @@
         document.getElementById('btn-break').addEventListener('touchstart', (e)=>{e.preventDefault(); interact('break')});
         document.getElementById('btn-build').addEventListener('touchstart', (e)=>{e.preventDefault(); interact('build')});
 
+        // Loop
         const velocity = new THREE.Vector3();
-        if(!localStorage.getItem(SAVE_KEY)) camera.position.set(0, 15, 0);
-
         function animate() {
             requestAnimationFrame(animate);
             if(!player.dead) {
                 if(player.invuln > 0) player.invuln--;
-                updateEntities();
+                // Entities
+                entities.forEach(e => {
+                    if(e.hurt > 0) { e.hurt--; e.mesh.material.forEach(m=>m.color.setHex(0xFF0000)); } else { e.mesh.material.forEach(m=>m.color.setHex(0xFFFFFF)); e.mesh.material[0].color.set(e.data.color); }
+                    e.vel.y -= 0.02; const nextY = e.mesh.position.y + e.vel.y; const feetY = Math.round(nextY - e.data.height/2);
+                    const bx=Math.round(e.mesh.position.x), bz=Math.round(e.mesh.position.z);
+                    if(worldData.has(`${bx},${feetY},${bz}`)) { e.vel.y=0; e.mesh.position.y=feetY+0.5+e.data.height/2; e.vel.x*=0.8; e.vel.z*=0.8; } else e.mesh.position.y=nextY;
+                    const dist = e.mesh.position.distanceTo(camera.position);
+                    if(e.data.ai === 'chase' && dist < 20) {
+                        const dx = camera.position.x - e.mesh.position.x; const dz = camera.position.z - e.mesh.position.z;
+                        e.vel.x += (dx/dist)*0.002; e.vel.z += (dz/dist)*0.002; e.mesh.rotation.y = Math.atan2(dx, dz);
+                        if(dist < 1.5) { takeDamage(e.data.damage); velocity.x += (dx/dist)*0.3; velocity.z += (dz/dist)*0.3; }
+                    } else if(Math.random() < 0.02) { e.vel.x += (Math.random()-0.5)*0.1; e.vel.z += (Math.random()-0.5)*0.1; }
+                    e.mesh.position.x += e.vel.x; e.mesh.position.z += e.vel.z;
+                });
+
+                // Player
                 if(input.lL) camera.rotation.y += 0.04; if(input.lR) camera.rotation.y -= 0.04;
                 if(input.lU) camera.rotation.x += 0.04; if(input.lD) camera.rotation.x -= 0.04;
                 camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-                const speed = 0.15;
-                const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); fwd.y=0; fwd.normalize();
+                const speed = 0.15; const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion); fwd.y=0; fwd.normalize();
                 const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion); right.y=0; right.normalize();
-                if(input.w) camera.position.add(fwd.multiplyScalar(speed));
-                if(input.s) camera.position.add(fwd.multiplyScalar(-speed));
-                if(input.a) camera.position.add(right.multiplyScalar(-speed));
-                if(input.d) camera.position.add(right.multiplyScalar(speed));
-                velocity.y -= 0.025;
-                const nextY = camera.position.y + velocity.y;
-                const feetX = Math.round(camera.position.x);
-                const feetZ = Math.round(camera.position.z);
-                const feetY = Math.round(nextY - 1.5);
-                if(worldData.has(`${feetX},${feetY},${feetZ}`)) {
-                    velocity.y = 0; camera.position.y = feetY + 0.5 + 1.5;
-                    velocity.x *= 0.8; velocity.z *= 0.8; 
-                    if(input.sp) velocity.y = 0.45;
-                } else camera.position.y = nextY;
+                if(input.w) camera.position.add(fwd.multiplyScalar(speed)); if(input.s) camera.position.add(fwd.multiplyScalar(-speed));
+                if(input.a) camera.position.add(right.multiplyScalar(-speed)); if(input.d) camera.position.add(right.multiplyScalar(speed));
+                velocity.y -= 0.025; const nextY = camera.position.y + velocity.y;
+                const feetX = Math.round(camera.position.x); const feetZ = Math.round(camera.position.z); const feetY = Math.round(nextY - 1.5);
+                if(worldData.has(`${feetX},${feetY},${feetZ}`)) { velocity.y=0; camera.position.y=feetY+0.5+1.5; velocity.x*=0.8; velocity.z*=0.8; if(input.sp) velocity.y=0.45; } else camera.position.y=nextY;
                 camera.position.x += velocity.x; camera.position.z += velocity.z;
                 if(camera.position.y < -20) { takeDamage(5); camera.position.set(0,20,0); }
             }
             renderer.render(scene, camera);
         }
         animate();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
