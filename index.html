@@ -3,57 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NanoCraft</title>
+    <title>NanoCraft 1.0 Survival</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         #hud { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
         #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid white; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: 10; mix-blend-mode: difference; }
         
-        /* --- INVENTORY --- */
+        /* --- DYNAMIC INVENTORY --- */
         #inventory {
             position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 6px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 12px;
-            pointer-events: auto; z-index: 40;
+            pointer-events: auto; z-index: 40; min-width: 50px; min-height: 50px; justify-content: center;
         }
         .inv-slot {
-            width: 42px; height: 42px; border: 2px solid #555; border-radius: 6px;
+            width: 45px; height: 45px; border: 2px solid #555; border-radius: 8px;
             cursor: pointer; position: relative; background-size: cover; image-rendering: pixelated;
+            transition: transform 0.1s, border-color 0.1s; background-color: rgba(0,0,0,0.3);
         }
-        .inv-slot.selected { border-color: white; box-shadow: 0 0 8px white; transform: scale(1.1); z-index: 41; }
-        .slot-num { position: absolute; top: 0; left: 2px; color: white; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        .inv-slot.selected { border-color: #fff; box-shadow: 0 0 8px white; transform: scale(1.15); z-index: 41; }
+        
+        /* Count Badge */
+        .slot-count {
+            position: absolute; bottom: -2px; right: 2px; 
+            color: white; font-size: 12px; font-weight: bold; 
+            text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+        }
+        /* Empty State Message */
+        .empty-msg { color: #aaa; font-size: 10px; align-self: center; display: none; }
+        #inventory:empty + .empty-msg { display: block; }
 
         /* --- CONTROLS --- */
         .control-layer { position: absolute; bottom: 70px; width: 100%; height: 160px; pointer-events: none; z-index: 20; }
-        
         .d-pad { position: absolute; width: 130px; height: 130px; pointer-events: auto; background: rgba(0,0,0,0.1); border-radius: 50%; }
         .pad-left { left: 20px; bottom: 10px; }
         .pad-right { right: 20px; bottom: 10px; }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center;
-            position: absolute; cursor: pointer; backdrop-filter: blur(2px); touch-action: manipulation;
-        }
+        .btn { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; position: absolute; cursor: pointer; backdrop-filter: blur(2px); touch-action: manipulation; }
         .btn:active { background: rgba(255, 255, 255, 0.5); }
-
         .btn-u { top: 0; left: 40px; width: 50px; height: 40px; }
         .btn-d { bottom: 0; left: 40px; width: 50px; height: 40px; }
         .btn-l { top: 40px; left: 0; width: 40px; height: 50px; }
         .btn-r { top: 40px; right: 0; width: 40px; height: 50px; }
         .pad-right .btn { border-color: rgba(255, 215, 0, 0.5); } 
-
         .actions { position: absolute; bottom: 150px; right: 20px; display: flex; gap: 15px; pointer-events: auto; }
         .btn-act { position: relative; width: 55px; height: 55px; border-radius: 50%; font-size: 10px; }
         .btn-break { background: rgba(255, 50, 50, 0.4); border-color: #ff5555; }
         .btn-build { background: rgba(50, 255, 100, 0.4); border-color: #55ff55; }
-        
         .btn-jump { position: absolute; bottom: 150px; left: 20px; width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 200, 0, 0.4); pointer-events: auto; }
     </style>
 </head>
 <body>
     <div id="hud">
-        <h3>NanoCraft 0.9</h3>
-        Inventory Filtered | Blocks: <span id="block-count">0</span>
+        <h3>NanoCraft 1.0</h3>
+        Mode: Survival | Break blocks to get items!
     </div>
     <div id="crosshair"></div>
 
@@ -67,7 +68,6 @@
             <div class="btn btn-r" id="btn-d">D</div>
             <div class="btn btn-d" id="btn-s">S</div>
         </div>
-
         <div class="actions">
             <div class="btn btn-act btn-break" id="btn-break">BREAK</div>
             <div class="btn btn-act btn-build" id="btn-build">BUILD</div>
@@ -87,7 +87,7 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. BLOCK DEFINITIONS ---
+        // --- 1. BLOCK CONFIGURATION ---
         const BLOCK_MANIFEST = [
             { id: 'grass', color: '#5fab3b', type: 'natural' },
             { id: 'dirt',  color: '#5D4037', type: 'natural' },
@@ -99,7 +99,6 @@
             { id: 'snow',  color: '#FFFFFF', type: 'natural' }
         ];
 
-        // --- 2. TEXTURE GENERATOR ---
         function createTexture(type, colorHex) {
             const c = document.createElement('canvas');
             c.width = 64; c.height = 64;
@@ -115,16 +114,15 @@
             return { tex, url: c.toDataURL() };
         }
 
-        // --- 3. SCENE SETUP ---
-        const WORLD_SIZE = 20;
+        // --- 2. ENGINE SETUP ---
+        const WORLD_SIZE = 24;
         const CHUNK_CAPACITY = 3000;
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.Fog(0x87CEEB, 10, 40);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.rotation.order = 'YXZ'; // Prevents Gimbal Lock
-        
+        camera.rotation.order = 'YXZ';
         const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -134,61 +132,108 @@
         sun.position.set(50, 100, 50);
         scene.add(ambient, sun);
 
-        // --- 4. INITIALIZE BLOCKS & INVENTORY ---
+        // --- 3. MESH GENERATION ---
         const blockMeshes = {};
-        const worldData = new Map();
+        const blockMeta = {}; // Stores Texture URLs for UI
         const activePools = {};
         const dummy = new THREE.Object3D();
-        const inventoryEl = document.getElementById('inventory');
-        let selectedBlockId = BLOCK_MANIFEST[0].id;
-        
-        // YOUR CUSTOM INVENTORY LIST
-        var inventory = ['grass','dirt','stone','gold','brick','plank'];
 
-        BLOCK_MANIFEST.forEach((b, idx) => {
-            // 1. Create Mesh (Always do this so the block exists in the engine)
+        BLOCK_MANIFEST.forEach(b => {
             const { tex, url } = createTexture(b.type, b.color);
             const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: b.type==='glass', opacity: b.type==='glass'?0.6:1 });
             const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1), mat, CHUNK_CAPACITY);
             scene.add(mesh);
             blockMeshes[b.id] = mesh;
+            blockMeta[b.id] = { url }; // Save for UI
             activePools[b.id] = 0;
-
-            // 2. Create UI Slot (Only if it is in the allowed list)
-            if (inventory.includes(b.id)) {
-                const slot = document.createElement('div');
-                slot.className = 'inv-slot';
-                // Default selection
-                if(selectedBlockId === b.id) slot.classList.add('selected');
-                
-                slot.style.backgroundImage = `url(${url})`;
-                slot.onclick = () => {
-                    selectedBlockId = b.id;
-                    document.querySelectorAll('.inv-slot').forEach(e=>e.classList.remove('selected'));
-                    slot.classList.add('selected');
-                };
-                inventoryEl.appendChild(slot);
-            }
         });
 
-        // --- 5. WORLD MANIPULATION ---
+        // --- 4. SURVIVAL INVENTORY SYSTEM ---
+        // 'grass': 5, 'stone': 10
+        const playerInventory = { 'brick': 64, 'plank': 32, 'glass': 10 }; // Starter Kit
+        let selectedBlockId = 'brick';
+        
+        const invEl = document.getElementById('inventory');
+
+        function renderInventory() {
+            invEl.innerHTML = '';
+            const items = Object.keys(playerInventory);
+            
+            if(items.length === 0) {
+                invEl.innerHTML = '<div style="color:white; font-size:12px; margin-top:15px;">Inventory Empty<br>Break blocks!</div>';
+                selectedBlockId = null;
+                return;
+            }
+
+            // Auto-select first item if current selection is invalid
+            if(!playerInventory[selectedBlockId]) selectedBlockId = items[0];
+
+            items.forEach(id => {
+                const count = playerInventory[id];
+                const meta = blockMeta[id];
+                
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                if(id === selectedBlockId) slot.classList.add('selected');
+                slot.style.backgroundImage = `url(${meta.url})`;
+                
+                // Count Badge
+                slot.innerHTML = `<div class="slot-count">${count}</div>`;
+                
+                slot.onclick = () => {
+                    selectedBlockId = id;
+                    renderInventory(); // Re-render to update selection border
+                };
+                invEl.appendChild(slot);
+            });
+        }
+
+        function modifyInventory(id, amount) {
+            if(!id) return;
+            if(!playerInventory[id]) playerInventory[id] = 0;
+            
+            playerInventory[id] += amount;
+            
+            if(playerInventory[id] <= 0) {
+                delete playerInventory[id];
+            }
+            renderInventory();
+        }
+
+        // Initial Render
+        renderInventory();
+
+        // --- 5. WORLD DATA & LOGIC ---
+        const worldData = new Map(); // "x,y,z" -> { id, idx }
+
         function setBlock(x, y, z, id) {
             const key = `${x},${y},${z}`;
-            // Remove old
+            
+            // BREAKING (Removing old)
             if(worldData.has(key)) {
                 const prev = worldData.get(key);
+                // Hide block
                 const pm = blockMeshes[prev.id];
                 const mat = new THREE.Matrix4();
                 pm.getMatrixAt(prev.idx, mat);
-                mat.elements[0]=0; mat.elements[5]=0; mat.elements[10]=0; // Scale 0
+                mat.elements[0]=0; mat.elements[5]=0; mat.elements[10]=0;
                 pm.setMatrixAt(prev.idx, mat);
                 pm.instanceMatrix.needsUpdate = true;
+                
                 worldData.delete(key);
+                
+                // Add to inventory (Survival Mechanic)
+                modifyInventory(prev.id, 1);
             }
-            // Add new
+
+            // BUILDING (Adding new)
             if(id) {
+                // Check if player has item
+                if (!playerInventory[id] || playerInventory[id] <= 0) return;
+
                 const mesh = blockMeshes[id];
                 const idx = activePools[id]++;
+                
                 if(idx < CHUNK_CAPACITY) {
                     dummy.position.set(x,y,z);
                     dummy.scale.set(1,1,1);
@@ -196,23 +241,45 @@
                     mesh.setMatrixAt(idx, dummy.matrix);
                     mesh.instanceMatrix.needsUpdate = true;
                     worldData.set(key, { id, idx });
+                    
+                    // Remove from inventory
+                    modifyInventory(id, -1);
                 }
             }
-            document.getElementById('block-count').innerText = worldData.size;
+            // Stats
+            // document.getElementById('block-count').innerText = worldData.size;
         }
 
-        // Generate Terrain
-        for(let x=-WORLD_SIZE/2; x<WORLD_SIZE/2; x++) {
-            for(let z=-WORLD_SIZE/2; z<WORLD_SIZE/2; z++) {
-                const h = Math.floor(Math.sin(x*0.2)*2 + Math.cos(z*0.2)*2);
-                setBlock(x, h, z, 'grass');
-                setBlock(x, h-1, z, 'dirt');
-                setBlock(x, h-2, z, 'stone');
+        // Terrain Generation (No inventory cost)
+        function generateTerrain() {
+            for(let x=-WORLD_SIZE/2; x<WORLD_SIZE/2; x++) {
+                for(let z=-WORLD_SIZE/2; z<WORLD_SIZE/2; z++) {
+                    const h = Math.floor(Math.sin(x*0.2)*2 + Math.cos(z*0.2)*2);
+                    
+                    // We bypass setBlock here to avoid modifying inventory during gen
+                    const place = (bx, by, bz, bid) => {
+                        const idx = activePools[bid]++;
+                        dummy.position.set(bx,by,bz);
+                        dummy.scale.set(1,1,1);
+                        dummy.updateMatrix();
+                        blockMeshes[bid].setMatrixAt(idx, dummy.matrix);
+                        worldData.set(`${bx},${by},${bz}`, { id: bid, idx });
+                    };
+
+                    place(x, h, z, 'grass');
+                    place(x, h-1, z, 'dirt');
+                    place(x, h-2, z, 'stone');
+                }
             }
+            // Update all meshes
+            Object.values(blockMeshes).forEach(m => m.instanceMatrix.needsUpdate = true);
         }
+        generateTerrain();
 
-        // --- 6. INPUT HANDLING ---
+        // --- 6. INTERACTION ---
         const input = { w:0, a:0, s:0, d:0, sp:0, lU:0, lD:0, lL:0, lR:0 };
+        
+        // Input Bindings (Same as before)
         const bind = (id, k) => {
             const el = document.getElementById(id);
             const on = (e)=>{e.preventDefault(); input[k]=1; el.style.background='rgba(255,255,255,0.5)';};
@@ -235,13 +302,15 @@
                 const y = Math.round(hit.point.y - hit.face.normal.y*0.1);
                 const z = Math.round(hit.point.z - hit.face.normal.z*0.1);
                 
-                if(mode === 'break') setBlock(x, y, z, null);
-                else {
+                if(mode === 'break') {
+                    setBlock(x, y, z, null); // Break -> Adds to inv
+                } else if(mode === 'build' && selectedBlockId) {
                     const bx = x + hit.face.normal.x;
                     const by = y + hit.face.normal.y;
                     const bz = z + hit.face.normal.z;
+                    // Collision Check
                     if(!(Math.abs(bx-camera.position.x)<0.8 && Math.abs(by-camera.position.y+1.5)<1.8 && Math.abs(bz-camera.position.z)<0.8)) {
-                        setBlock(bx, by, bz, selectedBlockId);
+                        setBlock(bx, by, bz, selectedBlockId); // Build -> Removes from inv
                     }
                 }
             }
@@ -252,7 +321,7 @@
         document.getElementById('btn-break').addEventListener('click', ()=>interact('break'));
         document.getElementById('btn-build').addEventListener('click', ()=>interact('build'));
 
-        // --- 7. PHYSICS LOOP ---
+        // --- 7. PHYSICS ---
         camera.position.set(0, 8, 0);
         const velocity = new THREE.Vector3();
         
@@ -265,8 +334,6 @@
             if(input.lR) camera.rotation.y -= lookSpeed;
             if(input.lU) camera.rotation.x += lookSpeed;
             if(input.lD) camera.rotation.x -= lookSpeed;
-            
-            // Clamp Pitch
             camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
 
             // Move
