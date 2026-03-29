@@ -462,7 +462,7 @@
                 velocity.y -= 0.025; const nextY = camera.position.y + velocity.y; const feetX = Math.round(camera.position.x); const feetZ = Math.round(camera.position.z); const feetY = Math.round(nextY - 1.5);
                 if(worldData.has(`${feetX},${feetY},${feetZ}`)) { velocity.y=0; camera.position.y=feetY+0.5+1.5; velocity.x*=0.8; velocity.z*=0.8; if(input.sp) velocity.y=0.45; } else camera.position.y=nextY;
                 camera.position.x += velocity.x; camera.position.z += velocity.z;
-                if(camera.position.y < -20) { takeDamage(5); camera.position.set(0,20,0); }
+                if(camera.position.y < -20) { terrain(camera.position.x+12,camera.position.z+12); takeDamage(5); camera.position.set(0,20,0); }
             }
             renderer.render(scene, camera);
         }
